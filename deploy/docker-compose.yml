@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # --- Database Layer ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: omniscribe-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: omniscribe_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d omniscribe_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- Caching, Rate Limiting & Scheduler State ---
+  redis:
+    image: redis:7-alpine
+    container_name: omniscribe-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # --- Object Storage (S3 Mock) ---
+  minio:
+    image: minio/minio:RELEASE.2024-01-28T22-35-53Z
+    container_name: omniscribe-minio
+    entrypoint: sh
+    # Automatically creates a default bucket named 'omniscribe-chunks' on startup
+    command: -c "mkdir -p /data/omniscribe-chunks && minio server /data --console-address ':9001'"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password
+    ports:
+      - "9000:9000" # API Port
+      - "9001:9001" # Console/UI Port
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # --- Message Broker (Kafka API) ---
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.3.5
+    container_name: omniscribe-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 1G
+      - --overprovisioned
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr localhost:8082
+    ports:
+      - "9092:9092"   # Exposed to your local machine (FastAPI, Worker running locally)
+      - "8082:8082"   # Redpanda HTTP Proxy API
+      - "19644:9644" # Redpanda Admin API
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9644/v1/status/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  redpanda_data:
+    driver: local
