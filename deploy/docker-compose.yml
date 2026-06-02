@@ -36,7 +36,7 @@ services:
 
   # --- Object Storage (S3 Mock) ---
   minio:
-    image: minio/minio:RELEASE.2024-01-28T22-35-53Z
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: omniscribe-minio
     entrypoint: sh
     # Automatically creates a default bucket named 'omniscribe-chunks' on startup
@@ -46,7 +46,7 @@ services:
       MINIO_ROOT_PASSWORD: minio_password
     ports:
       - "9000:9000" # API Port
-      - "9001:9001" # Console/UI Port
+      - "9002:9001" # Console/UI Port
     volumes:
       - minio_data:/data
     healthcheck:
