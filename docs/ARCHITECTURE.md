@@ -131,7 +131,7 @@ Important production considerations:
 	```
 2. Create topics (after Redpanda ready):
 	```bash
-	python scripts/create_topics.py
+	python -m scripts.create_topics
 	```
 3. Apply DB migrations:
 	```bash

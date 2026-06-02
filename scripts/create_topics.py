@@ -1,6 +1,6 @@
-import src.shared.kafka.topics as topics
 from confluent_kafka.admin import AdminClient, NewTopic
 from src.shared.config import settings
+from src.shared.kafka import topics
 
 TOPICS = [
     (topics.TOPIC_INGRESS, 1, 1),

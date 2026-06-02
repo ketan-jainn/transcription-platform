@@ -1,5 +1,3 @@
-"""Kafka topic name constants used across services."""
-
 TOPIC_INGRESS = "transcription.ingress"
 TOPIC_JOBS = "transcription.jobs"
 TOPIC_SEGMENTS = "transcription.segments"
